@@ -173,7 +173,16 @@ test_examples = [
 # method has the correct name (so test failures will be displayed nicely)
 import unittest
 class FlattenUnflattenTests(unittest.TestCase):
-    pass
+    def test_integers_with_gaps_does_not_create_sparse_array(self):
+        # This test doesn't round-trip, so it can't be created using
+        # the _make_test_pair function
+        self.assertEqual(unflatten({
+            'list.10': 'three',
+            'list.5': 'two',
+            'list.0': 'one',
+        }), {
+            'list': ['one', 'two', 'three']
+        })
 
 def _make_test_pair(test_name, unflattened, flattened):
     def test_flatten(self):
