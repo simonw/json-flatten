@@ -35,6 +35,7 @@ Flattens to:
     }
 
 """
+import re
 
 def _object_to_rows(obj, prefix=None):
     rows = []
@@ -61,6 +62,8 @@ def flatten(obj):
     return dict(_object_to_rows(obj))
 
 
+_types_re = re.compile(r'.*\$(none|bool|int|float)$')
+
 def unflatten(data):
     obj = {}
     for key, value in data.items():
@@ -71,7 +74,7 @@ def unflatten(data):
             current[bit] = current.get(bit) or {}
             current = current[bit]
         # Now deal with $type suffixes:
-        if '$' in lastkey:
+        if _types_re.match(lastkey):
             lastkey, lasttype = lastkey.rsplit('$', 2)
             value = {
                 'int': int,
@@ -84,17 +87,24 @@ def unflatten(data):
     # We handle foo.0.one, foo.1.two syntax in a second pass,
     # by iterating through our structure looking for dictionaries
     # where all of the keys are stringified integers
-    def replace_integer_keyed_dicts_with_lists(d):
-        for key, value in d.items():
-            if isinstance(value, dict):
-                if all(k.isdigit() for k in value):
-                    d[key] = [i[1] for i in sorted([
-                        (int(k), value[k]) for k in value
-                    ])]
-                else:
-                    replace_integer_keyed_dicts_with_lists(value)
+    def replace_integer_keyed_dicts_with_lists(obj):
+        if isinstance(obj, dict):
+            if all(k.isdigit() for k in obj):
+                return [i[1] for i in sorted([
+                    (int(k), replace_integer_keyed_dicts_with_lists(v))
+                    for k, v in obj.items()
+                ])]
+            else:
+                return dict(
+                    (k, replace_integer_keyed_dicts_with_lists(v))
+                    for k, v in obj.items()
+                )
+        elif isinstance(obj, list):
+            return [replace_integer_keyed_dicts_with_lists(v) for v in obj]
+        else:
+            return obj
 
-    replace_integer_keyed_dicts_with_lists(obj)
+    obj = replace_integer_keyed_dicts_with_lists(obj)
     return obj
 
 
@@ -111,6 +121,22 @@ test_examples = [
         }
     }, {
         'foo.bar': 'baz'
+    }),
+    ('list_with_one_item', {
+        'foo': [
+            'item'
+        ]
+    }, {
+        'foo.0': 'item'
+    }),
+    ('nested_lists', {
+        'foo': [
+            [
+                'item'
+            ]
+        ]
+    }, {
+        'foo.0.0': 'item'
     }),
     ('list', {
         'foo': {
@@ -166,6 +192,21 @@ test_examples = [
         'this.other_types.true$bool': 'True',
         'this.other_types.false$bool': 'False',
         'this.other_types.none$none': 'None'
+    }),
+    ('dollar_signs_that_are_not_type_indicators', {
+        'foo': [
+            {
+                'emails': [
+                    'bar@example.com',
+                ],
+                'phones': {
+                    '_$!<home>!$_': '555-555-5555'
+                }
+            }
+        ]
+    }, {
+        'foo.0.emails.0': 'bar@example.com',
+        'foo.0.phones._$!<home>!$_': '555-555-5555',
     }),
 ]
 
