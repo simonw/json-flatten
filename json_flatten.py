@@ -89,7 +89,7 @@ def unflatten(data):
     # where all of the keys are stringified integers
     def replace_integer_keyed_dicts_with_lists(obj):
         if isinstance(obj, dict):
-            if all(k.isdigit() for k in obj):
+            if obj and all(k.isdigit() for k in obj):
                 return [i[1] for i in sorted([
                     (int(k), replace_integer_keyed_dicts_with_lists(v))
                     for k, v in obj.items()
@@ -208,6 +208,7 @@ test_examples = [
         'foo.0.emails.0': 'bar@example.com',
         'foo.0.phones._$!<home>!$_': '555-555-5555',
     }),
+    ('empty_object', {}, {}),
 ]
 
 # Dynamically construct the TestCase, to ensure each flatten/unflatten
