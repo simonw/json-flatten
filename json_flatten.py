@@ -41,8 +41,11 @@ def _object_to_rows(obj, prefix=None):
     rows = []
     dot_prefix = (prefix and (prefix + '.') or '')
     if isinstance(obj, dict):
-        for key, item in obj.items():
-            rows.extend(_object_to_rows(item, prefix=dot_prefix + key))
+        if not obj:
+            rows.append(((prefix or '') + '$empty', '{}'))
+        else:
+            for key, item in obj.items():
+                rows.extend(_object_to_rows(item, prefix=dot_prefix + key))
     elif isinstance(obj, (list, tuple)):
         for i, item in enumerate(obj):
             rows.extend(_object_to_rows(item, prefix=dot_prefix + str(i)))
@@ -62,7 +65,7 @@ def flatten(obj):
     return dict(_object_to_rows(obj))
 
 
-_types_re = re.compile(r'.*\$(none|bool|int|float)$')
+_types_re = re.compile(r'.*\$(none|bool|int|float|empty)$')
 
 def unflatten(data):
     obj = {}
@@ -79,6 +82,7 @@ def unflatten(data):
             value = {
                 'int': int,
                 'float': float,
+                'empty': lambda v: {},
                 'bool': lambda v: v.lower() == 'true',
                 'none': lambda v: None
             }.get(lasttype, lambda v: v)(value)
@@ -105,6 +109,9 @@ def unflatten(data):
             return obj
 
     obj = replace_integer_keyed_dicts_with_lists(obj)
+    # Handle root units only, e.g. {'$empty': '{}'}
+    if list(obj.keys()) == ['']:
+        return obj.values()[0]
     return obj
 
 
@@ -208,7 +215,16 @@ test_examples = [
         'foo.0.emails.0': 'bar@example.com',
         'foo.0.phones._$!<home>!$_': '555-555-5555',
     }),
-    ('empty_object', {}, {}),
+    ('empty_object', {}, {'$empty': '{}'}),
+    ('nested_empty_objects', {
+        'nested': {
+            'foo': {},
+            'bar': {},
+        }
+    }, {
+        'nested.foo$empty': '{}',
+        'nested.bar$empty': '{}',
+    })
 ]
 
 # Dynamically construct the TestCase, to ensure each flatten/unflatten
