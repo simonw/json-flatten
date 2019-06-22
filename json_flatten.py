@@ -119,5 +119,5 @@ def unflatten(data):
     obj = replace_integer_keyed_dicts_with_lists(obj)
     # Handle root units only, e.g. {'$empty': '{}'}
     if list(obj.keys()) == [""]:
-        return obj.values()[0]
+        return list(obj.values())[0]
     return obj
