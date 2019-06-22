@@ -28,10 +28,24 @@ jobs:
       - image: circleci/python:3.6
     steps:
       - checkout
+      - restore_cache:
+          key: v1-dependency-cache-{{ checksum "setup.py" }}
+      - run:
+          name: install python dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -e .[test]
+      - save_cache:
+          key: v1-dependency-cache-{{ checksum "setup.py" }}
+          paths:
+            - "venv"
       - run:
           name: run tests
           command: |
-            python test_json_flatten.py
+            . venv/bin/activate
+            pip install -e .[test]
+            pytest
   test-python-install:
     parameters:
       version:
@@ -41,15 +55,41 @@ jobs:
       - image: circleci/python:3.6
     steps:
       - checkout
+      - restore_cache:
+          key: v1-dependency-cache-{{ checksum "setup.py" }}
+      - run:
+          name: install python dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -e .[test]
+      - save_cache:
+          key: v1-dependency-cache-{{ checksum "setup.py" }}
+          paths:
+            - "venv"
       - run:
           name: run tests
           command: |
-            python test_json_flatten.py
+            . venv/bin/activate
+            pip install -e .[test]
+            pytest
   deploy:
     docker:
       - image: circleci/python:3.6
     steps:
       - checkout
+      - restore_cache:
+          key: v1-dependency-cache-{{ checksum "setup.py" }}
+      - run:
+          name: install python dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -e .[test]
+      - save_cache:
+          key: v1-dependency-cache-{{ checksum "setup.py" }}
+          paths:
+            - "venv"
       - run:
           name: init .pypirc
           command: |
@@ -63,7 +103,6 @@ jobs:
       - run:
           name: upload to pypi
           command: |
-            python3 -m venv venv
             . venv/bin/activate
             pip install twine
             twine upload dist/*
