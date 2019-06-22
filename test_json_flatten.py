@@ -1,4 +1,6 @@
 from json_flatten import flatten, unflatten
+from hypothesis import given
+from hypothesis.strategies import text
 import pytest
 
 
@@ -70,3 +72,11 @@ def test_integers_with_gaps_does_not_create_sparse_array():
     assert unflatten({"list.10": "three", "list.5": "two", "list.0": "one"}) == {
         "list": ["one", "two", "three"]
     }
+
+
+@given(text(min_size=1))
+def test_with_hypothesis(s):
+    d = {s: s}
+    flattened = flatten(d)
+    unflattened = unflatten(flattened)
+    assert d == unflattened
