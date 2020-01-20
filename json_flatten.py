@@ -86,7 +86,7 @@ def unflatten(data):
                 "int": int,
                 "float": float,
                 "empty": lambda v: {},
-                "bool": lambda v: v.lower() == "true",
+                "bool": lambda v: str(v).lower().strip() == "true",
                 "none": lambda v: None,
             }.get(lasttype, lambda v: v)(value)
         current[lastkey] = value
