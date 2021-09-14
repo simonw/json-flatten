@@ -1,7 +1,7 @@
 from setuptools import setup
 import os
 
-VERSION = "0.1"
+VERSION = "0.2"
 
 
 def get_long_description():
@@ -19,6 +19,11 @@ setup(
     long_description_content_type="text/markdown",
     author="Simon Willison",
     url="https://github.com/simonw/json-flatten",
+    project_urls={
+        "Issues": "https://github.com/simonw/json-flatten/issues",
+        "CI": "https://github.com/simonw/json-flatten/actions",
+        "Changelog": "https://github.com/simonw/json-flatten/releases",
+    },
     license="Apache License, Version 2.0",
     version=VERSION,
     py_modules=["json_flatten"],
