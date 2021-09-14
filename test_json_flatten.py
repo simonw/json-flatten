@@ -8,12 +8,12 @@ import pytest
         # test_name, unflattened, flattened
         ("simple", {"foo": "bar"}, {"foo": "bar"}),
         ("nested", {"foo": {"bar": "baz"}}, {"foo.bar": "baz"}),
-        ("list_with_one_item", {"foo": ["item"]}, {"foo.0": "item"}),
-        ("nested_lists", {"foo": [["item"]]}, {"foo.0.0": "item"}),
+        ("list_with_one_item", {"foo": ["item"]}, {"foo.[0]": "item"}),
+        ("nested_lists", {"foo": [["item"]]}, {"foo.[0].[0]": "item"}),
         (
             "list",
             {"foo": {"bar": ["one", "two"]}},
-            {"foo.bar.0": "one", "foo.bar.1": "two"},
+            {"foo.bar.[0]": "one", "foo.bar.[1]": "two"},
         ),
         ("int", {"foo": 5}, {"foo$int": "5"}),
         ("none", {"foo": None}, {"foo$none": "None"}),
@@ -31,8 +31,8 @@ import pytest
                 }
             },
             {
-                "this.is.nested.0.nested_dict_one$int": "10",
-                "this.is.nested.1.nested_dict_two$float": "20.5",
+                "this.is.nested.[0].nested_dict_one$int": "10",
+                "this.is.nested.[1].nested_dict_two$float": "20.5",
                 "this.other_types.true$bool": "True",
                 "this.other_types.false$bool": "False",
                 "this.other_types.none$none": "None",
@@ -49,8 +49,8 @@ import pytest
                 ]
             },
             {
-                "foo.0.emails.0": "bar@example.com",
-                "foo.0.phones._$!<home>!$_": "555-555-5555",
+                "foo.[0].emails.[0]": "bar@example.com",
+                "foo.[0].phones._$!<home>!$_": "555-555-5555",
             },
         ),
         ("empty_object", {}, {"$empty": "{}"}),
@@ -65,10 +65,11 @@ import pytest
             {"foo": {"bar": []}, "nested": [[], []]},
             {
                 "foo.bar$emptylist": "[]",
-                "nested.0$emptylist": "[]",
-                "nested.1$emptylist": "[]",
+                "nested.[0]$emptylist": "[]",
+                "nested.[1]$emptylist": "[]",
             },
         ),
+        ("dict_with_numeric_key", {"bob": {"24": 4}}, {"bob.24$int": "4"}),
     ],
 )
 def test_flatten_unflatten(test_name, unflattened, flattened):
@@ -77,6 +78,6 @@ def test_flatten_unflatten(test_name, unflattened, flattened):
 
 
 def test_integers_with_gaps_does_not_create_sparse_array():
-    assert unflatten({"list.10": "three", "list.5": "two", "list.0": "one"}) == {
+    assert unflatten({"list.[10]": "three", "list.[5]": "two", "list.[0]": "one"}) == {
         "list": ["one", "two", "three"]
     }
