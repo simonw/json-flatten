@@ -59,6 +59,16 @@ import pytest
             {"nested": {"foo": {}, "bar": {}}},
             {"nested.foo$empty": "{}", "nested.bar$empty": "{}"},
         ),
+        ("empty_nested_list", {"empty": []}, {"empty$emptylist": "[]"}),
+        (
+            "empty_nested_list_complex",
+            {"foo": {"bar": []}, "nested": [[], []]},
+            {
+                "foo.bar$emptylist": "[]",
+                "nested.0$emptylist": "[]",
+                "nested.1$emptylist": "[]",
+            },
+        ),
     ],
 )
 def test_flatten_unflatten(test_name, unflattened, flattened):

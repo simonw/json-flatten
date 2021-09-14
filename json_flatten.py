@@ -48,6 +48,8 @@ def _object_to_rows(obj, prefix=None):
             for key, item in obj.items():
                 rows.extend(_object_to_rows(item, prefix=dot_prefix + key))
     elif isinstance(obj, (list, tuple)):
+        if len(obj) == 0:
+            rows.append(((prefix or "") + "$emptylist", "[]"))
         for i, item in enumerate(obj):
             rows.extend(_object_to_rows(item, prefix=dot_prefix + str(i)))
     elif obj is None:
@@ -67,7 +69,7 @@ def flatten(obj):
     return dict(_object_to_rows(obj))
 
 
-_types_re = re.compile(r".*\$(none|bool|int|float|empty)$")
+_types_re = re.compile(r".*\$(none|bool|int|float|empty|emptylist)$")
 
 
 def unflatten(data):
@@ -86,6 +88,7 @@ def unflatten(data):
                 "int": int,
                 "float": float,
                 "empty": lambda v: {},
+                "emptylist": lambda v: [],
                 "bool": lambda v: v.lower() == "true",
                 "none": lambda v: None,
             }.get(lasttype, lambda v: v)(value)
