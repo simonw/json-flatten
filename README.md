@@ -13,8 +13,9 @@ Useful if you need to represent a JSON object using a regular HTML form or trans
 For example:
 
 ```pycon
+>>> import json_flatten
 >>> json_flatten.flatten({"foo": {"bar": [1, True, None]}})
-{'foo.bar.0$int': '1', 'foo.bar.1$bool': 'True', 'foo.bar.2$none': 'None'}
+{'foo.bar.[0]$int': '1', 'foo.bar.[1]$bool': 'True', 'foo.bar.[2]$none': 'None'}
 >>> json_flatten.unflatten(_)
 {'foo': {'bar': [1, True, None]}}
 ```
