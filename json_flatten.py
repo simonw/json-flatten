@@ -65,6 +65,8 @@ def _object_to_rows(obj, prefix=None):
 
 
 def flatten(obj):
+    if not isinstance(obj, dict):
+        raise TypeError("Expected dict, got {}".format(type(obj)))
     return dict(_object_to_rows(obj))
 
 

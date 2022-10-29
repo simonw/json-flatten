@@ -73,11 +73,18 @@ import pytest
     ],
 )
 def test_flatten_unflatten(test_name, unflattened, flattened):
-    assert flatten(unflattened) == flattened
-    assert unflatten(flattened) == unflattened
+    actual_flattened = flatten(unflattened)
+    assert actual_flattened == flattened
+    actual_unflattened = unflatten(actual_flattened)
+    assert actual_unflattened == unflattened
 
 
 def test_integers_with_gaps_does_not_create_sparse_array():
     assert unflatten({"list.[10]": "three", "list.[5]": "two", "list.[0]": "one"}) == {
         "list": ["one", "two", "three"]
     }
+
+
+def test_list_as_base_level_object_rejected_with_error():
+    with pytest.raises(TypeError):
+        flatten([{"name": "john"}])

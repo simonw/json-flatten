@@ -19,3 +19,5 @@ For example:
 >>> json_flatten.unflatten(_)
 {'foo': {'bar': [1, True, None]}}
 ```
+
+The top-level object passed to `flatten()` must be a dictionary.
