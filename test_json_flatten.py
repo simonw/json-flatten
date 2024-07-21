@@ -1,5 +1,6 @@
-from json_flatten import flatten, unflatten
 import pytest
+
+from json_flatten import flatten, unflatten
 
 
 @pytest.mark.parametrize(
@@ -15,11 +16,11 @@ import pytest
             {"foo": {"bar": ["one", "two"]}},
             {"foo.bar.[0]": "one", "foo.bar.[1]": "two"},
         ),
-        ("int", {"foo": 5}, {"foo$int": "5"}),
-        ("none", {"foo": None}, {"foo$none": "None"}),
-        ("bool_true", {"foo": True}, {"foo$bool": "True"}),
-        ("bool_false", {"foo": False}, {"foo$bool": "False"}),
-        ("float", {"foo": 2.5}, {"foo$float": "2.5"}),
+        ("int", {"foo": 5}, {"foo": 5}),
+        ("none", {"foo": None}, {"foo": None}),
+        ("bool_true", {"foo": True}, {"foo": True}),
+        ("bool_false", {"foo": False}, {"foo": False}),
+        ("float", {"foo": 2.5}, {"foo": 2.5}),
         (
             "complex",
             {
@@ -31,11 +32,11 @@ import pytest
                 }
             },
             {
-                "this.is.nested.[0].nested_dict_one$int": "10",
-                "this.is.nested.[1].nested_dict_two$float": "20.5",
-                "this.other_types.true$bool": "True",
-                "this.other_types.false$bool": "False",
-                "this.other_types.none$none": "None",
+                "this.is.nested.[0].nested_dict_one": 10,
+                "this.is.nested.[1].nested_dict_two": 20.5,
+                "this.other_types.true": True,
+                "this.other_types.false": False,
+                "this.other_types.none": None,
             },
         ),
         (
@@ -53,23 +54,23 @@ import pytest
                 "foo.[0].phones._$!<home>!$_": "555-555-5555",
             },
         ),
-        ("empty_object", {}, {"$empty": "{}"}),
+        ("empty_object", {}, {}),
         (
             "nested_empty_objects",
             {"nested": {"foo": {}, "bar": {}}},
-            {"nested.foo$empty": "{}", "nested.bar$empty": "{}"},
+            {"nested.foo": {}, "nested.bar": {}},
         ),
-        ("empty_nested_list", {"empty": []}, {"empty$emptylist": "[]"}),
+        ("empty_nested_list", {"empty": []}, {"empty": []}),
         (
             "empty_nested_list_complex",
             {"foo": {"bar": []}, "nested": [[], []]},
             {
-                "foo.bar$emptylist": "[]",
-                "nested.[0]$emptylist": "[]",
-                "nested.[1]$emptylist": "[]",
+                "foo.bar": [],
+                "nested.[0]": [],
+                "nested.[1]": [],
             },
         ),
-        ("dict_with_numeric_key", {"bob": {"24": 4}}, {"bob.24$int": "4"}),
+        ("dict_with_numeric_key", {"bob": {"24": 4}}, {"bob.24": 4}),
     ],
 )
 def test_flatten_unflatten(test_name, unflattened, flattened):
