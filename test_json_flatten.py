@@ -9,12 +9,12 @@ from json_flatten import flatten, unflatten
         # test_name, unflattened, flattened
         ("simple", {"foo": "bar"}, {"foo": "bar"}),
         ("nested", {"foo": {"bar": "baz"}}, {"foo.bar": "baz"}),
-        ("list_with_one_item", {"foo": ["item"]}, {"foo.[0]": "item"}),
-        ("nested_lists", {"foo": [["item"]]}, {"foo.[0].[0]": "item"}),
+        ("list_with_one_item", {"foo": ["item"]}, {"foo": ["item"]}),
+        ("nested_lists", {"foo": [["item"]]}, {"foo.[0]": ["item"]}),
         (
             "list",
             {"foo": {"bar": ["one", "two"]}},
-            {"foo.bar.[0]": "one", "foo.bar.[1]": "two"},
+            {"foo.bar": ["one", "two"]},
         ),
         ("int", {"foo": 5}, {"foo": 5}),
         ("none", {"foo": None}, {"foo": None}),
@@ -50,7 +50,7 @@ from json_flatten import flatten, unflatten
                 ]
             },
             {
-                "foo.[0].emails.[0]": "bar@example.com",
+                "foo.[0].emails": ["bar@example.com"],
                 "foo.[0].phones._$!<home>!$_": "555-555-5555",
             },
         ),
@@ -71,6 +71,28 @@ from json_flatten import flatten, unflatten
             },
         ),
         ("dict_with_numeric_key", {"bob": {"24": 4}}, {"bob.24": 4}),
+        (
+            "list_as_enum",
+            {
+                "count": "int",
+                "cost": "int",
+                "budget_items": [
+                    {
+                        "name": ["dog food", "cat food", "fish food"],
+                        "total": [1, 2, 3],
+                        "cost_over_time": [{"date": "str", "cost": "int"}],
+                    }
+                ],
+            },
+            {
+                "count": "int",
+                "cost": "int",
+                "budget_items.[0].name": ["dog food", "cat food", "fish food"],
+                "budget_items.[0].total": [1, 2, 3],
+                "budget_items.[0].cost_over_time.[0].date": "str",
+                "budget_items.[0].cost_over_time.[0].cost": "int",
+            },
+        ),
     ],
 )
 def test_flatten_unflatten(test_name, unflattened, flattened):

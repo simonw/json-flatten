@@ -43,7 +43,7 @@ def _object_to_rows(obj, prefix=None):
     dot_prefix = prefix and (prefix + ".") or ""
     if isinstance(obj, dict):
         if not obj:
-            rows.append(((prefix or ""), "{}"))
+            rows.append(((prefix or ""), {}))
         else:
             for key, item in obj.items():
                 rows.extend(_object_to_rows(item, prefix=dot_prefix + key))
@@ -51,7 +51,10 @@ def _object_to_rows(obj, prefix=None):
         if len(obj) == 0:
             rows.append(((prefix or ""), []))
         for i, item in enumerate(obj):
-            rows.extend(_object_to_rows(item, prefix=dot_prefix + "[{}]".format(i)))
+            if isinstance(item, str) or isinstance(item, int):
+                rows.append((prefix, obj))
+            else:
+                rows.extend(_object_to_rows(item, prefix=dot_prefix + "[{}]".format(i)))
     elif obj is None:
         rows.append(((prefix or ""), None))
     elif isinstance(obj, bool):
@@ -66,12 +69,13 @@ def _object_to_rows(obj, prefix=None):
 
 
 def flatten(obj):
+    if obj == {}:
+        return {}
     if not isinstance(obj, dict):
         raise TypeError("Expected dict, got {}".format(type(obj)))
     return dict(_object_to_rows(obj))
 
 
-_types_re = re.compile(r".*\$(none|bool|int|float|empty|emptylist)$")
 _int_key_re = re.compile(r"\[(\d+)\]")
 
 
@@ -84,17 +88,6 @@ def unflatten(data):
         for bit in path:
             current[bit] = current.get(bit) or {}
             current = current[bit]
-        # Now deal with $type suffixes:
-        if _types_re.match(lastkey):
-            lastkey, lasttype = lastkey.rsplit("$", 2)
-            value = {
-                "int": int,
-                "float": float,
-                "empty": lambda v: {},
-                "emptylist": lambda v: [],
-                "bool": lambda v: v.lower() == "true",
-                "none": lambda v: None,
-            }.get(lasttype, lambda v: v)(value)
         current[lastkey] = value
 
     # We handle foo.[0].one, foo.[1].two syntax in a second pass,
