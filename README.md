@@ -40,7 +40,7 @@ Example:
 <!-- [[[cog
 import cog
 import json
-from json_flatten import flatten
+from json_flatten import flatten, unflatten
 
 example = {
   "user": {
@@ -197,10 +197,15 @@ example = {
 cog.out("```json\n")
 cog.out(json.dumps(example, indent=2))
 cog.out("\n```\n")
-cog.out("\nFlattened:\n```\n")
-for key, value in flatten(example).items():
+cog.out("\nFlattened with `flattened = flatten(example)`\n```\n")
+flattened = flatten(example)
+for key, value in flattened.items():
     cog.out(f"{key}={value}\n")
 cog.out("```\n")
+cog.out("\nUnflattened again with `unflattened = unflatten(flattened)`\n")
+cog.out("```json\n")
+cog.out(json.dumps(unflatten(flattened), indent=2))
+cog.out("\n```\n")
 ]]] -->
 ```json
 {
@@ -232,7 +237,7 @@ cog.out("```\n")
 }
 ```
 
-Flattened:
+Flattened with `flattened = flatten(example)`
 ```
 user.name=Alice
 user.age$int=28
@@ -247,5 +252,36 @@ user.more_nesting.empty_lists.[0]$emptylist=[]
 user.more_nesting.empty_lists.[1]$emptylist=[]
 user.more_nesting.empty_objects.[0]$empty={}
 user.more_nesting.empty_objects.[1]$empty={}
+```
+
+Unflattened again with `unflattened = unflatten(flattened)`
+```json
+{
+  "user": {
+    "name": "Alice",
+    "age": 28,
+    "hobbies": [
+      "reading",
+      "swimming"
+    ],
+    "address": {
+      "street": "123 Main St",
+      "city": "Anytown"
+    },
+    "active": true,
+    "salary": 50000.5,
+    "spouse": null,
+    "more_nesting": {
+      "empty_lists": [
+        [],
+        []
+      ],
+      "empty_objects": [
+        {},
+        {}
+      ]
+    }
+  }
+}
 ```
 <!-- [[[end]]] -->
