@@ -27,6 +27,5 @@ setup(
     license="Apache License, Version 2.0",
     version=VERSION,
     py_modules=["json_flatten"],
-    extras_require={"test": ["pytest", "black"]},
-    tests_require=["json-flatten[test]"],
+    extras_require={"test": ["pytest", "black", "cogapp"]},
 )

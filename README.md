@@ -8,7 +8,7 @@
 
 Python functions for flattening a JSON object to a single dictionary of pairs, and unflattening that dictionary back to a JSON object.
 
-Useful if you need to represent a JSON object using a regular HTML form or transmit it as a set of query string parameters.
+This can be useful if you need to represent a JSON object using a regular HTML form or transmit it as a set of query string parameters.
 
 For example:
 
@@ -21,3 +21,215 @@ For example:
 ```
 
 The top-level object passed to `flatten()` must be a dictionary.
+
+## JSON flattening format
+
+### Basic principles
+
+1. Keys are constructed using dot notation to represent nesting.
+2. Type information is preserved using `$type` suffixes.
+3. List indices are represented using `[index]` notation.
+4. Empty objects and lists have special representations.
+
+### Nested objects
+
+For nested objects, keys are constructed by joining the nested keys with dots.
+
+Example:
+
+<!-- [[[cog
+import cog
+import json
+from json_flatten import flatten
+
+example = {
+  "user": {
+    "name": "John",
+    "age": 30
+  }
+}
+
+cog.out("```json\n")
+cog.out(json.dumps(example, indent=2))
+cog.out("\n```\n")
+cog.out("Flattened:\n```\n")
+for key, value in flatten(example).items():
+    cog.out(f"{key}={value}\n")
+cog.out("```\n")
+]]] -->
+```json
+{
+  "user": {
+    "name": "John",
+    "age": 30
+  }
+}
+```
+Flattened:
+```
+user.name=John
+user.age$int=30
+```
+<!-- [[[end]]]  -->
+
+### Lists
+
+List items are represented using `[index]` notation.
+
+Example:
+<!-- [[[cog
+example = {
+  "fruits": ["apple", "banana", "cherry"]
+}
+
+cog.out("```json\n")
+cog.out(json.dumps(example, indent=2))
+cog.out("\n```\n")
+cog.out("Flattened:\n```\n")
+for key, value in flatten(example).items():
+    cog.out(f"{key}={value}\n")
+cog.out("```\n")
+]]] -->
+```json
+{
+  "fruits": [
+    "apple",
+    "banana",
+    "cherry"
+  ]
+}
+```
+Flattened:
+```
+fruits.[0]=apple
+fruits.[1]=banana
+fruits.[2]=cherry
+```
+<!-- [[[end]]] -->
+
+### Nested Lists
+
+For nested lists, the index notation is repeated.
+
+Example:
+<!-- [[[cog
+example = {
+  "matrix": [[1, 2], [3, 4]]
+}
+
+cog.out("```json\n")
+cog.out(json.dumps(example))
+cog.out("\n```\n")
+cog.out("Flattened:\n```\n")
+for key, value in flatten(example).items():
+    cog.out(f"{key}={value}\n")
+cog.out("```\n")
+]]] -->
+```json
+{"matrix": [[1, 2], [3, 4]]}
+```
+Flattened:
+```
+matrix.[0].[0]$int=1
+matrix.[0].[1]$int=2
+matrix.[1].[0]$int=3
+matrix.[1].[1]$int=4
+```
+<!-- [[[end]]] -->
+
+## Type Preservation
+
+Types are preserved using `$type` suffixes:
+
+<!-- [[[cog
+examples = (
+    ("String", "", {"name": "Cleo"}),
+    ("Integer", "$int", {"age": 30}),
+    ("Float", "$float", {"price": 19.99}),
+    ("Boolean", "$bool", {"active": True}),
+    ("Null", "$none", {"data": None}),
+    ("Empty object", "$empty", {"obj": {}}),
+    ("Empty list", "$emptylist", {"list": []}),
+)
+cog.out("| Type | Suffix | Example |\n")
+cog.out("|------|--------|---------|\n")
+for type_, suffix, example in (examples):
+    key, value = list(flatten(example).items())[0]
+    suffix = f'`{suffix}`' if suffix else ''
+    cog.out(f"|{type_}|{suffix}|`{key}={value}`|\n")
+]]] -->
+| Type | Suffix | Example |
+|------|--------|---------|
+|String||`name=Cleo`|
+|Integer|`$int`|`age$int=30`|
+|Float|`$float`|`price$float=19.99`|
+|Boolean|`$bool`|`active$bool=True`|
+|Null|`$none`|`data$none=None`|
+|Empty object|`$empty`|`obj$empty={}`|
+|Empty list|`$emptylist`|`list$emptylist=[]`|
+<!-- [[[end]]] -->
+
+String values do not require a type suffix.
+
+## Examples
+
+### Complex Nested Structure
+
+JSON:
+<!-- [[[cog
+example = {
+  "user": {
+    "name": "Alice",
+    "age": 28,
+    "hobbies": ["reading", "swimming"],
+    "address": {
+      "street": "123 Main St",
+      "city": "Anytown"
+    },
+    "active": True,
+    "salary": 50000.50,
+    "spouse": None
+  }
+}
+
+cog.out("```json\n")
+cog.out(json.dumps(example, indent=2))
+cog.out("\n```\n")
+cog.out("\nFlattened:\n```\n")
+for key, value in flatten(example).items():
+    cog.out(f"{key}={value}\n")
+cog.out("```\n")
+]]] -->
+```json
+{
+  "user": {
+    "name": "Alice",
+    "age": 28,
+    "hobbies": [
+      "reading",
+      "swimming"
+    ],
+    "address": {
+      "street": "123 Main St",
+      "city": "Anytown"
+    },
+    "active": true,
+    "salary": 50000.5,
+    "spouse": null
+  }
+}
+```
+
+Flattened:
+```
+user.name=Alice
+user.age$int=28
+user.hobbies.[0]=reading
+user.hobbies.[1]=swimming
+user.address.street=123 Main St
+user.address.city=Anytown
+user.active$bool=True
+user.salary$float=50000.5
+user.spouse$none=None
+```
+<!-- [[[end]]] -->
