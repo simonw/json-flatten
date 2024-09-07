@@ -34,6 +34,7 @@ Flattens to:
         "this.other_types.none$none": "None",
     }
 """
+
 import re
 
 
