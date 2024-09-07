@@ -186,7 +186,11 @@ example = {
     },
     "active": True,
     "salary": 50000.50,
-    "spouse": None
+    "spouse": None,
+    "more_nesting": {
+      "empty_lists": [[], []],
+      "empty_objects": [{}, {}]
+    }
   }
 }
 
@@ -213,7 +217,17 @@ cog.out("```\n")
     },
     "active": true,
     "salary": 50000.5,
-    "spouse": null
+    "spouse": null,
+    "more_nesting": {
+      "empty_lists": [
+        [],
+        []
+      ],
+      "empty_objects": [
+        {},
+        {}
+      ]
+    }
   }
 }
 ```
@@ -229,5 +243,9 @@ user.address.city=Anytown
 user.active$bool=True
 user.salary$float=50000.5
 user.spouse$none=None
+user.more_nesting.empty_lists.[0]$emptylist=[]
+user.more_nesting.empty_lists.[1]$emptylist=[]
+user.more_nesting.empty_objects.[0]$empty={}
+user.more_nesting.empty_objects.[1]$empty={}
 ```
 <!-- [[[end]]] -->
