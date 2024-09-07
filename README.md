@@ -107,7 +107,7 @@ fruits.[2]=cherry
 ```
 <!-- [[[end]]] -->
 
-### Nested Lists
+### Nested lists
 
 For nested lists, the index notation is repeated.
 
@@ -137,7 +137,7 @@ matrix.[1].[1]$int=4
 ```
 <!-- [[[end]]] -->
 
-## Type Preservation
+## Type preservation
 
 Types are preserved using `$type` suffixes:
 
@@ -171,9 +171,7 @@ for type_, suffix, example in (examples):
 
 String values do not require a type suffix.
 
-## Examples
-
-### Complex Nested Structure
+## Example
 
 JSON:
 <!-- [[[cog
