@@ -30,6 +30,7 @@ The top-level object passed to `flatten()` must be a dictionary.
 2. Type information is preserved using `$type` suffixes.
 3. List indices are represented using `[index]` notation.
 4. Empty objects and lists have special representations.
+5. Special characters in keys are escaped using `~` tilde escaping (inspired by [RFC 6901 JSON Pointer](https://www.rfc-editor.org/rfc/rfc6901)).
 
 ### Nested objects
 
@@ -134,6 +135,52 @@ matrix.[0].[0]$int=1
 matrix.[0].[1]$int=2
 matrix.[1].[0]$int=3
 matrix.[1].[1]$int=4
+```
+<!-- [[[end]]] -->
+
+### Key escaping
+
+Dictionary keys containing characters that are special to the flattening format (`.`, `$`, `[`, `~`) are escaped using tilde sequences, inspired by [RFC 6901 JSON Pointer](https://www.rfc-editor.org/rfc/rfc6901):
+
+| Sequence | Literal character |
+|----------|-------------------|
+| `~0` | `~` |
+| `~1` | `.` |
+| `~2` | `$` |
+| `~3` | `[` |
+
+This ensures that keys with special characters round-trip correctly through `flatten()` and `unflatten()`.
+
+<!-- [[[cog
+examples = [
+    {"a.b": "dot in key"},
+    {"price$int": "dollar in key"},
+    {"[0]": "bracket in key"},
+    {"a~b": "tilde in key"},
+]
+
+for example in examples:
+    key = list(example.keys())[0]
+    cog.out(f"**Key `{key}`**:\n```\n")
+    for k, v in flatten(example).items():
+        cog.out(f"{k}={v}\n")
+    cog.out("```\n")
+]]] -->
+**Key `a.b`**:
+```
+a~1b=dot in key
+```
+**Key `price$int`**:
+```
+price~2int=dollar in key
+```
+**Key `[0]`**:
+```
+~30]=bracket in key
+```
+**Key `a~b`**:
+```
+a~0b=tilde in key
 ```
 <!-- [[[end]]] -->
 
