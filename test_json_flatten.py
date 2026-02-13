@@ -39,7 +39,7 @@ import pytest
             },
         ),
         (
-            "dollar_signs_that_are_not_type_indicators",
+            "dollar_signs_escaped",
             {
                 "foo": [
                     {
@@ -50,7 +50,7 @@ import pytest
             },
             {
                 "foo.[0].emails.[0]": "bar@example.com",
-                "foo.[0].phones._$!<home>!$_": "555-555-5555",
+                "foo.[0].phones._~2!<home>!~2_": "555-555-5555",
             },
         ),
         ("empty_object", {}, {"$empty": "{}"}),
@@ -88,3 +88,149 @@ def test_integers_with_gaps_does_not_create_sparse_array():
 def test_list_as_base_level_object_rejected_with_error():
     with pytest.raises(TypeError):
         flatten([{"name": "john"}])
+
+
+# --- RED phase: tests for tilde escaping (RFC 6901-style) ---
+
+
+class TestDotInKeys:
+    """Issue #1: Keys containing dots must round-trip correctly."""
+
+    def test_simple_dot_in_key(self):
+        obj = {"a.b": "value"}
+        assert unflatten(flatten(obj)) == obj
+
+    def test_dot_key_distinct_from_nested(self):
+        """Dotted key and nested key must produce different flattened forms."""
+        dotted = flatten({"a.b": "value"})
+        nested = flatten({"a": {"b": "value"}})
+        assert dotted != nested
+
+    def test_dot_key_flattened_form(self):
+        assert flatten({"a.b": "value"}) == {"a~1b": "value"}
+
+    def test_dot_key_with_type_suffix(self):
+        obj = {"a.b": 5}
+        assert flatten(obj) == {"a~1b$int": "5"}
+        assert unflatten(flatten(obj)) == obj
+
+    def test_multiple_dots_in_key(self):
+        obj = {"a.b.c": "value"}
+        assert unflatten(flatten(obj)) == obj
+
+    def test_dot_key_nested_in_object(self):
+        obj = {"outer": {"a.b": "value"}}
+        assert unflatten(flatten(obj)) == obj
+
+
+class TestDollarInKeys:
+    """Issue #2: Keys containing $ must not crash rsplit."""
+
+    def test_dollar_in_key_with_int_value(self):
+        obj = {"my$key": 5}
+        assert unflatten(flatten(obj)) == obj
+
+    def test_dollar_in_key_flattened_form(self):
+        assert flatten({"my$key": 5}) == {"my~2key$int": "5"}
+
+    def test_dollar_in_key_with_string_value(self):
+        obj = {"my$key": "hello"}
+        assert unflatten(flatten(obj)) == obj
+
+    def test_multiple_dollars_in_key(self):
+        obj = {"a$b$c": 10}
+        assert unflatten(flatten(obj)) == obj
+
+
+class TestAmbiguousTypeSuffix:
+    """Issue #3: Keys ending with type suffix names must not be misinterpreted."""
+
+    def test_key_ending_with_dollar_int_string_value(self):
+        obj = {"price$int": "hello"}
+        assert unflatten(flatten(obj)) == obj
+
+    def test_key_ending_with_dollar_none_string_value(self):
+        obj = {"flag$none": "active"}
+        assert unflatten(flatten(obj)) == obj
+
+    def test_key_ending_with_dollar_bool_string_value(self):
+        obj = {"x$bool": "maybe"}
+        assert unflatten(flatten(obj)) == obj
+
+    def test_key_ending_with_dollar_float_string_value(self):
+        obj = {"val$float": "text"}
+        assert unflatten(flatten(obj)) == obj
+
+    def test_key_ending_with_dollar_empty_string_value(self):
+        obj = {"obj$empty": "not empty"}
+        assert unflatten(flatten(obj)) == obj
+
+    def test_key_ending_with_dollar_emptylist_string_value(self):
+        obj = {"arr$emptylist": "not a list"}
+        assert unflatten(flatten(obj)) == obj
+
+
+class TestBracketKeys:
+    """Issue #4: Keys in [N] format must not crash or be treated as array indices."""
+
+    def test_bracket_key_round_trip(self):
+        obj = {"[0]": "value"}
+        assert unflatten(flatten(obj)) == obj
+
+    def test_bracket_key_flattened_form(self):
+        assert flatten({"[0]": "value"}) == {"~30]": "value"}
+
+    def test_bracket_key_not_confused_with_list(self):
+        """A dict with [N] keys must stay a dict, not become a list."""
+        obj = {"[0]": "a", "[1]": "b"}
+        result = unflatten(flatten(obj))
+        assert isinstance(result, dict)
+        assert result == obj
+
+    def test_bracket_key_nested(self):
+        obj = {"outer": {"[0]": "value"}}
+        assert unflatten(flatten(obj)) == obj
+
+
+class TestTildeInKeys:
+    """Self-consistency: keys containing ~ must round-trip correctly."""
+
+    def test_tilde_in_key(self):
+        obj = {"a~b": "value"}
+        assert unflatten(flatten(obj)) == obj
+
+    def test_tilde_in_key_flattened_form(self):
+        assert flatten({"a~b": "value"}) == {"a~0b": "value"}
+
+    def test_tilde_escape_sequence_in_key(self):
+        """A key that looks like an escape sequence must round-trip."""
+        obj = {"a~1b": "value"}
+        assert unflatten(flatten(obj)) == obj
+
+    def test_tilde_with_type_suffix(self):
+        obj = {"a~b": 5}
+        assert unflatten(flatten(obj)) == obj
+
+
+class TestCombinationEscaping:
+    """Multiple special characters in the same key."""
+
+    def test_dot_and_dollar_in_key(self):
+        obj = {"a.b$int": "hello"}
+        assert unflatten(flatten(obj)) == obj
+
+    def test_all_special_chars_in_key(self):
+        obj = {"a.b$c[0]~d": "value"}
+        assert unflatten(flatten(obj)) == obj
+
+    def test_existing_dollar_sign_test_updated(self):
+        """The _$!<home>!$_ key must still round-trip with escaping."""
+        obj = {
+            "foo": [
+                {
+                    "emails": ["bar@example.com"],
+                    "phones": {"_$!<home>!$_": "555-555-5555"},
+                }
+            ]
+        }
+        assert unflatten(flatten(obj)) == obj

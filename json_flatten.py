@@ -2,7 +2,7 @@
 flatten() and unflatten()
 
 A pair of functions that can convert an arbitrary JSON object into a
-flat name/value pair dictionary and back again, preserving type 
+flat name/value pair dictionary and back again, preserving type
 information and handling both nested lists and nested dictionaries.
 
 For example:
@@ -33,9 +33,32 @@ Flattens to:
         "this.other_types.false$bool": "False",
         "this.other_types.none$none": "None",
     }
+
+Keys containing special characters (., $, [, ~) are escaped using
+RFC 6901-style tilde escaping:
+
+    ~0 = literal ~
+    ~1 = literal .
+    ~2 = literal $
+    ~3 = literal [
 """
 
 import re
+
+
+def _escape_key(key):
+    """Escape special characters in a dictionary key.
+
+    Order matters: ~ must be escaped first to avoid double-escaping."""
+    return key.replace("~", "~0").replace(".", "~1").replace("$", "~2").replace("[", "~3")
+
+
+def _unescape_key(key):
+    """Unescape a previously escaped key segment.
+
+    Order matters: ~0 must be decoded last so ~03 doesn't prematurely
+    become ~ + 3 then [."""
+    return key.replace("~3", "[").replace("~2", "$").replace("~1", ".").replace("~0", "~")
 
 
 def _object_to_rows(obj, prefix=None):
@@ -46,7 +69,9 @@ def _object_to_rows(obj, prefix=None):
             rows.append(((prefix or "") + "$empty", "{}"))
         else:
             for key, item in obj.items():
-                rows.extend(_object_to_rows(item, prefix=dot_prefix + key))
+                rows.extend(
+                    _object_to_rows(item, prefix=dot_prefix + _escape_key(key))
+                )
     elif isinstance(obj, (list, tuple)):
         if len(obj) == 0:
             rows.append(((prefix or "") + "$emptylist", "[]"))
@@ -72,7 +97,7 @@ def flatten(obj):
 
 
 _types_re = re.compile(r".*\$(none|bool|int|float|empty|emptylist)$")
-_int_key_re = re.compile(r"\[(\d+)\]")
+_int_key_re = re.compile(r"\[(\d+)\]$")
 
 
 def unflatten(data):
@@ -86,7 +111,7 @@ def unflatten(data):
             current = current[bit]
         # Now deal with $type suffixes:
         if _types_re.match(lastkey):
-            lastkey, lasttype = lastkey.rsplit("$", 2)
+            lastkey, lasttype = lastkey.rsplit("$", 1)
             value = {
                 "int": int,
                 "float": float,
@@ -95,20 +120,22 @@ def unflatten(data):
                 "bool": lambda v: v.lower() == "true",
                 "none": lambda v: None,
             }.get(lasttype, lambda v: v)(value)
+        # Keep lastkey in escaped form here -- unescaping happens in third pass
+        # so that [N] detection in second pass isn't confused by literal bracket keys
         current[lastkey] = value
 
-    # We handle foo.[0].one, foo.[1].two syntax in a second pass,
-    # by iterating through our structure looking for dictionaries
-    # where all of the keys are stringified integers
+    # Second pass: convert dicts where all keys are [N] into lists.
+    # This works on escaped keys, so real array indices [0] match but
+    # escaped bracket keys like ~30] do not.
     def replace_integer_keyed_dicts_with_lists(obj):
         if isinstance(obj, dict):
-            if obj and all(_int_key_re.match(k) for k in obj):
+            if obj and all(_int_key_re.fullmatch(k) for k in obj):
                 return [
                     i[1]
                     for i in sorted(
                         [
                             (
-                                int(_int_key_re.match(k).group(1)),
+                                int(_int_key_re.fullmatch(k).group(1)),
                                 replace_integer_keyed_dicts_with_lists(v),
                             )
                             for k, v in obj.items()
@@ -126,7 +153,19 @@ def unflatten(data):
             return obj
 
     obj = replace_integer_keyed_dicts_with_lists(obj)
+
+    # Third pass: unescape all remaining dict keys
+    def unescape_keys(obj):
+        if isinstance(obj, dict):
+            return {_unescape_key(k): unescape_keys(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [unescape_keys(v) for v in obj]
+        else:
+            return obj
+
+    obj = unescape_keys(obj)
+
     # Handle root units only, e.g. {'$empty': '{}'}
-    if list(obj.keys()) == [""]:
+    if isinstance(obj, dict) and list(obj.keys()) == [""]:
         return list(obj.values())[0]
     return obj
