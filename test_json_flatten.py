@@ -53,6 +53,15 @@ import pytest
                 "foo.[0].phones._$!<home>!$_": "555-555-5555",
             },
         ),
+        # A key that contains "$" and has a typed value used to crash
+        # unflatten with `ValueError: too many values to unpack` because the
+        # type-suffix split was greedy and consumed the whole key.
+        ("dollar_sign_in_key_with_typed_value", {"foo$bar": 5}, {"foo$bar$int": "5"}),
+        (
+            "multiple_dollar_signs_in_key_with_typed_value",
+            {"_$home$_": True},
+            {"_$home$_$bool": "True"},
+        ),
         ("empty_object", {}, {"$empty": "{}"}),
         (
             "nested_empty_objects",
