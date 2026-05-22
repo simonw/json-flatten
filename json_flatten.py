@@ -86,7 +86,10 @@ def unflatten(data):
             current = current[bit]
         # Now deal with $type suffixes:
         if _types_re.match(lastkey):
-            lastkey, lasttype = lastkey.rsplit("$", 2)
+            # rsplit on "$" once so a key that itself contains "$" (e.g.
+            # "foo$bar") round-trips intact: "foo$bar$int" -> ("foo$bar",
+            # "int") rather than crashing on a 3-element unpack.
+            lastkey, lasttype = lastkey.rsplit("$", 1)
             value = {
                 "int": int,
                 "float": float,
